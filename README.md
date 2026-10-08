@@ -18,6 +18,5 @@ dan dikelola menggunakan Jira, GitHub, dan Discord/Slack.
 
 ## Tools
 
-- Jira
 - GitHub
 - Discord/Slack
