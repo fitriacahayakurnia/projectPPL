@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../storage/framework/views/*.php";
+@source "../**/*.blade.php";
+@source "../**/*.js";
+
+@theme {
+    --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-heading: "Plus Jakarta Sans", sans-serif;
+
+    /* Custom Theme Colors */
+    --color-primary: #1A5CFF;
+    --color-primary-dark: #1045D6;
+    --color-primary-light: #EEF3FF;
+    --color-primary-mid: #4F80FF;
+
+    --color-teal: #0EA5A0;
+    --color-teal-light: #E6F7F7;
+
+    --color-dark: #0A0F1E;
+    --color-dark-2: #141929;
+
+    --color-g50: #F8FAFE;
+    --color-g100: #F1F4FB;
+    --color-g200: #E4E9F5;
+    --color-g300: #D0D9EC;
+    --color-g400: #B0BDDA;
+    --color-g500: #8896B5;
+    --color-g600: #5C6B8A;
+    --color-g700: #3D4F6E;
+    --color-g800: #1E2D47;
+    --color-g900: #0D1728;
+
+    /* Status Colors */
+    --color-success: #16A34A;
+    --color-success-light: #DCFCE7;
+    --color-warn: #D97706;
+    --color-warn-light: #FEF3C7;
+    --color-danger: #DC2626;
+    --color-danger-light: #FEE2E2;
+    --color-pend: #7C3AED;
+    --color-pend-light: #EDE9FE;
+
+    /* Box Shadows */
+    --shadow-card: 0 2px 8px rgba(10, 15, 30, 0.08), 0 1px 2px rgba(10, 15, 30, 0.04);
+    --shadow-card-md: 0 8px 32px rgba(10, 15, 30, 0.12), 0 2px 8px rgba(10, 15, 30, 0.06);
+    --shadow-card-lg: 0 20px 60px rgba(10, 15, 30, 0.18);
+}
+
+@layer base {
+    body {
+        @apply antialiased bg-g50 text-g900;
+        scroll-behavior: smooth;
+    }
+}
+
+@layer utilities {
+    .font-heading {
+        font-family: var(--font-heading);
+    }
+}
