@@ -9,11 +9,11 @@
 @endsection
 
 @section('content')
-    <div class="flex flex-col md:flex-row min-h-screen bg-g50">
+   <div id="adminDashboard" class="flex flex-col md:flex-row min-h-screen bg-g50">
         @include('partials.admin-sidebar')
 
-        <div class="flex-1 w-full min-w-0 flex flex-col p-6 md:p-8 relative">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8 pt-12 md:pt-0">
+<div class="admin-main flex-1 w-full min-w-0 flex flex-col p-6 md:p-8 relative">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8 pt-12 md:pt-0">
                 <div class="flex flex-col md:flex-row md:items-center gap-4 w-full justify-between">
                     <div>
                         <div class="text-[13px] text-g500 mb-0.5">Selamat datang kembali,</div>

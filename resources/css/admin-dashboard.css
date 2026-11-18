@@ -1,0 +1,150 @@
+
+/* ==========================================
+   ELECTRONIK MODERN - ADMIN REDESIGN
+   ========================================== */
+
+#adminDashboard {
+    min-height: 100vh;
+    background: #f1f5f9 !important;
+    color: #172554;
+}
+
+/* Main dashboard background and spacing */
+#adminDashboard .admin-main {
+    min-width: 0;
+    padding: 32px;
+    background: #f1f5f9 !important;
+}
+
+/* Sidebar redesign */
+#adminSidebar {
+    background: linear-gradient(160deg, #111827, #172554 70%, #1e3a5f) !important;
+    box-shadow: 8px 0 30px rgba(15, 23, 42, .12);
+}
+
+#adminSidebar a {
+    margin: 5px 12px;
+    width: calc(100% - 24px);
+    border-radius: 10px;
+    transition: all .25s ease;
+}
+
+#adminSidebar a:hover {
+    background: rgba(255, 255, 255, .10) !important;
+    color: white !important;
+    transform: translateX(4px);
+}
+
+#adminSidebar a[class*="bg-primary/10"] {
+    background: #2563eb !important;
+    color: white !important;
+    border-left-color: #93c5fd !important;
+}
+
+#adminSidebar form button:hover {
+    background: rgba(239, 68, 68, .15) !important;
+    color: #fca5a5 !important;
+}
+
+/* Dashboard title */
+#adminDashboard h1 {
+    font-size: 29px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #172554 !important;
+}
+
+#adminDashboard h3 {
+    color: #172554;
+}
+
+/* All dashboard cards */
+#adminDashboard .admin-main [class*="rounded-[24px]"] {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px !important;
+    box-shadow: 0 5px 20px rgba(15, 23, 42, .045);
+    transition: box-shadow .25s ease, transform .25s ease;
+}
+
+#adminDashboard .admin-main [class*="rounded-[24px]"]:hover {
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .09);
+}
+
+/* Statistics cards */
+#adminDashboard .admin-main > .grid:first-of-type > div {
+    padding: 24px;
+    border-radius: 18px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, .05);
+}
+
+/* Chart panel */
+#adminDashboard canvas {
+    max-width: 100%;
+}
+
+/* Table design */
+#adminDashboard table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#adminDashboard thead th {
+    padding: 17px 20px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+#adminDashboard tbody td {
+    padding: 18px 20px;
+    color: #334155;
+    border-bottom: 1px solid #edf2f7;
+}
+
+#adminDashboard tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Form controls */
+#adminDashboard select {
+    border-radius: 8px;
+    color: #334155;
+}
+
+#adminDashboard button {
+    transition: all .2s ease;
+}
+
+#adminDashboard button:hover {
+    filter: brightness(1.05);
+}
+
+/* Date and report controls */
+#adminDashboard form:has(select) {
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, .04);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    #adminDashboard .admin-main {
+        padding: 18px;
+    }
+
+    #adminDashboard h1 {
+        font-size: 23px;
+    }
+
+    #adminDashboard thead th,
+    #adminDashboard tbody td {
+        padding: 12px;
+    }
+}
