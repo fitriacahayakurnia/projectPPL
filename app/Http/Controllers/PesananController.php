@@ -32,10 +32,10 @@ class PesananController extends Controller
     {
         $pesanans = Pesanan::with([
                 'user:id_users,nama,email',
-                'pembayaran:id_pembayaran,id_pesanan,metode_pembayaran,status_konfirmasi,bukti_bayar',
                 'ekspedisi:id_ekspedisi,nama_ekspedisi,biaya_pengiriman',
                 'detailPesanans.produk:id_produk,nama_produk,gambar,harga',
                 'promo',
+                'pembayaran:id_pembayaran,id_pesanan,metode_pembayaran,gateway,gateway_order_id,payment_type,payment_url,transaction_status,status_konfirmasi,bukti_bayar',
             ])
             ->select('id_pesanan','id_users','id_ekspedisi','id_promo','id_alamat','no_resi','tanggal_pesan',
                      'status_pesanan','total_bayar','subtotal','diskon','ongkos_kirim')
@@ -139,8 +139,8 @@ class PesananController extends Controller
         $pesanans = Pesanan::with([
                 'detailPesanans.produk:id_produk,nama_produk,gambar,harga',
                 'ekspedisi:id_ekspedisi,nama_ekspedisi,biaya_pengiriman',
-                'pembayaran:id_pembayaran,id_pesanan,metode_pembayaran,status_konfirmasi',
                 'promo',
+                'pembayaran:id_pembayaran,id_pesanan,metode_pembayaran,gateway,gateway_order_id,payment_type,payment_url,transaction_status,status_konfirmasi,bukti_bayar',
             ])
             ->select('id_pesanan','id_users','id_ekspedisi','id_promo','id_alamat','no_resi','tanggal_pesan',
                      'status_pesanan','total_bayar','subtotal','diskon','ongkos_kirim')
@@ -242,14 +242,14 @@ class PesananController extends Controller
         $request->validate([
             'id_alamat' => ['required', 'exists:alamat_users,id_alamat'],
             'id_ekspedisi' => ['required', 'exists:ekspedisis,id_ekspedisi'],
-            'metode_pembayaran' => ['required', 'string', 'in:Transfer Bank,E-Wallet'],
-            'bukti_bayar' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'metode_pembayaran' => ['required', 'string', 'in:Midtrans Sandbox,Transfer Bank,E-Wallet'],
+            'bukti_bayar' => ['required_unless:metode_pembayaran,Midtrans Sandbox', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ], [
             'id_alamat.required' => 'Silakan pilih alamat pengiriman.',
             'id_ekspedisi.required' => 'Silakan pilih ekspedisi pengiriman.',
             'metode_pembayaran.required' => 'Silakan pilih metode pembayaran.',
             'metode_pembayaran.in' => 'Metode pembayaran tidak valid.',
-            'bukti_bayar.required' => 'Bukti pembayaran wajib diunggah.',
+            'bukti_bayar.required_unless' => 'Bukti pembayaran wajib diunggah.',
             'bukti_bayar.mimes' => 'Format bukti bayar harus berupa JPG, PNG, atau PDF.',
             'bukti_bayar.max' => 'Ukuran file bukti bayar maksimal 5MB.',
         ]);
@@ -264,8 +264,8 @@ class PesananController extends Controller
 
         $buyNowItem = session('buy_now_item');
         $keranjang = null;
-        $ekspedisi  = Ekspedisi::findOrFail($request->id_ekspedisi);
-        $subtotal   = 0;
+        $ekspedisi = Ekspedisi::findOrFail($request->id_ekspedisi);
+        $subtotal = 0;
         $orderItems = [];
 
         if ($buyNowItem) {
@@ -277,11 +277,10 @@ class PesananController extends Controller
             if ($produk->stok < $qty) {
                 return back()->with('error', 'Stok ' . $produk->nama_produk . ' tidak mencukupi.')->withInput();
             }
-            $lineTotal  = $produk->harga * $qty;
-            $subtotal  += $lineTotal;
+            $subtotal += $produk->harga * $qty;
             $orderItems[] = [
-                'id_produk'  => $produk->id_produk,
-                'qty'        => $qty,
+                'id_produk' => $produk->id_produk,
+                'qty' => $qty,
                 'harga_beli' => $produk->harga,
             ];
         } else {
@@ -296,17 +295,16 @@ class PesananController extends Controller
             foreach ($keranjang->detailKeranjangs as $detail) {
                 if ($detail->produk) {
                     $produk = $detail->produk;
-                    $qty    = $detail->qty;
+                    $qty = $detail->qty;
                     if ($produk->stok < $qty) {
                         return back()
                             ->with('error', 'Stok ' . $produk->nama_produk . ' tidak mencukupi.')
                             ->withInput();
                     }
-                    $lineTotal  = $produk->harga * $qty;
-                    $subtotal  += $lineTotal;
+                    $subtotal += $produk->harga * $qty;
                     $orderItems[] = [
-                        'id_produk'  => $produk->id_produk,
-                        'qty'        => $qty,
+                        'id_produk' => $produk->id_produk,
+                        'qty' => $qty,
                         'harga_beli' => $produk->harga,
                     ];
                 }
@@ -318,8 +316,9 @@ class PesananController extends Controller
         $discount = $appliedPromo ? $this->calculateDiscount($appliedPromo, $subtotal) : 0;
         $promo = $appliedPromo ?: $this->defaultPromo();
         $totalBayar = max(0, $subtotal - $discount) + $ongkir;
+        $isMidtrans = $request->metode_pembayaran === 'Midtrans Sandbox';
 
-        $createdPesanan = DB::transaction(function () use ($request, $subtotal, $discount, $ongkir, $totalBayar, $orderItems, $promo, $appliedPromo) {
+        $createdPesanan = DB::transaction(function () use ($request, $subtotal, $discount, $ongkir, $totalBayar, $orderItems, $promo, $appliedPromo, $isMidtrans) {
             $pesanan = Pesanan::create([
                 'id_users' => Auth::id(),
                 'id_alamat' => $request->id_alamat,
@@ -328,7 +327,7 @@ class PesananController extends Controller
                 'tanggal_pesan' => now(),
                 'subtotal' => $subtotal,
                 'diskon' => $discount,
-                'no_resi' => '', // diupdate setelah id didapat
+                'no_resi' => '',
                 'ongkos_kirim' => $ongkir,
                 'total_bayar' => $totalBayar,
                 'status_pesanan' => 'menunggu',
@@ -337,15 +336,16 @@ class PesananController extends Controller
             $pesanan->update(['no_resi' => 'RESI-' . $pesanan->id_pesanan]);
 
             $buktiFileName = null;
-            if ($request->hasFile('bukti_bayar')) {
+            if (!$isMidtrans && $request->hasFile('bukti_bayar')) {
                 $file = $request->file('bukti_bayar');
                 $buktiFileName = 'pay-' . $pesanan->id_pesanan . '-' . time() . '.' . $file->getClientOriginalExtension();
                 $file->storeAs('payments', $buktiFileName, 'public');
             }
 
-            \App\Models\Pembayaran::create([
+            Pembayaran::create([
                 'id_pesanan' => $pesanan->id_pesanan,
                 'metode_pembayaran' => $request->metode_pembayaran,
+                'gateway' => $isMidtrans ? 'midtrans' : 'manual',
                 'bukti_bayar' => $buktiFileName,
                 'status_konfirmasi' => 0,
             ]);
@@ -362,7 +362,6 @@ class PesananController extends Controller
                     'harga_beli' => $item['harga_beli'],
                 ]);
 
-                // Kurangi stok
                 Produk::where('id_produk', $item['id_produk'])
                     ->decrement('stok', $item['qty']);
             }
@@ -373,16 +372,40 @@ class PesananController extends Controller
         $this->notifyCustomer(
             Auth::id(),
             'Pesanan Berhasil Dibuat',
-            'Pesanan ' . $createdPesanan->no_resi . ' sudah diterima dan menunggu verifikasi pembayaran admin.'
+            $isMidtrans
+                ? 'Pesanan ' . $createdPesanan->no_resi . ' berhasil dibuat. Silakan selesaikan pembayaran melalui Midtrans.'
+                : 'Pesanan ' . $createdPesanan->no_resi . ' sudah diterima dan menunggu verifikasi pembayaran admin.'
         );
 
-        // Kosongkan keranjang di database (jika bukan buy now)
         if ($buyNowItem) {
             session()->forget('buy_now_item');
         } elseif ($keranjang) {
             $keranjang->detailKeranjangs()->delete();
         }
         session()->forget('applied_promo_id');
+
+        if ($isMidtrans) {
+            try {
+                $snap = app(\App\Services\MidtransService::class)->createSnapTransaction($createdPesanan);
+
+                $createdPesanan->pembayaran()->update([
+                    'gateway_order_id' => $snap['order_id'],
+                    'snap_token' => $snap['token'],
+                    'payment_url' => $snap['redirect_url'],
+                    'transaction_status' => 'pending',
+                ]);
+
+                if (!empty($snap['redirect_url'])) {
+                    return redirect()->away($snap['redirect_url']);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Midtrans Snap error: ' . $e->getMessage());
+
+                return redirect()
+                    ->route('customer.orders')
+                    ->with('error', 'Pesanan dibuat, tetapi gagal menghubungkan ke Midtrans: ' . $e->getMessage());
+            }
+        }
 
         return redirect()->route('customer.orders')->with('status', 'Pesanan berhasil dibuat! Pembayaran Anda akan segera diverifikasi oleh admin.');
     }

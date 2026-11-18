@@ -146,6 +146,16 @@
                                                     </div>
                                                 @endif
                                             </div>
+                                        @elseif ($pesanan->pembayaran?->gateway === 'midtrans')
+                                            <div class="flex flex-col gap-1.5 items-start">
+                                                <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 py-1 px-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider">
+                                                    Midtrans
+                                                </span>
+                                                @if ($pesanan->pembayaran->payment_type)
+                                                    <span class="text-[11px] font-semibold text-g500 uppercase">{{ $pesanan->pembayaran->payment_type }}</span>
+                                                @endif
+                                                <span class="inline-flex items-center {{ $paymentClass }} border py-1 px-2 rounded text-[10px] font-bold tracking-wider">{{ $paymentLabel }}</span>
+                                            </div>
                                         @else
                                             <div class="w-12 h-12 rounded-lg bg-orange-50 border-2 border-orange-200 flex items-center justify-center text-orange-400 text-sm font-extrabold" title="Belum Dibayar">
                                                 404
