@@ -93,6 +93,7 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/my-orders', [PesananController::class, 'customerOrders'])->name('customer.orders');
     Route::post('/my-orders/{pesanan}/complete', [PesananController::class, 'completeOrder'])->name('customer.orders.complete');
     Route::get('/checkout', [PesananController::class, 'checkout'])->name('customer.checkout');
+    Route::post('/checkout/shipping-rates', [\App\Http\Controllers\EkspedisiController::class, 'calculateRates'])->name('customer.checkout.shippingRates');
     Route::post('/buy-now', [PesananController::class, 'buyNow'])->name('customer.buyNow');
     Route::post('/checkout', [PesananController::class, 'placeOrder'])->name('customer.placeOrder');
     Route::get('/payments/midtrans/finish', [PembayaranController::class, 'finish'])->name('payments.midtrans.finish');

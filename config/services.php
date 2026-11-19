@@ -39,5 +39,10 @@ return [
         'client_key' => env('MIDTRANS_CLIENT_KEY'),
         'is_production' => filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN),
     ],
+    'rajaongkir' => [
+        'api_key' => env('RAJAONGKIR_API_KEY'),
+        'origin_search' => env('RAJAONGKIR_ORIGIN_SEARCH', 'Surabaya'),
+        'base_url' => env('RAJAONGKIR_BASE_URL', 'https://rajaongkir.komerce.id/api/v1'),
+    ],
 
 ];

@@ -90,26 +90,43 @@
                         </x-card>
 
                         <!-- Ekspedisi -->
-                        <x-card class="p-6 mb-5">
-                            <h3 class="font-heading text-lg font-extrabold text-g900 mb-5 flex items-center gap-2">
-                                <i class="fi fi-rr-truck-side text-primary"></i> Pilih Ekspedisi
-                            </h3>
-                            <div class="space-y-3" id="ekspedisiList">
-                            @foreach ($ekspedisis as $ekspedisi)
-                                <label class="flex items-center gap-3 p-4 bg-white rounded-xl cursor-pointer border-[1.5px] border-g200 hover:border-primary transition-all has-[:checked]:border-primary has-[:checked]:bg-primary-light/50 has-[:checked]:ring-4 has-[:checked]:ring-primary/10">
-                                    <input type="radio" name="id_ekspedisi" value="{{ $ekspedisi->id_ekspedisi }}"
-                                        data-biaya="{{ $ekspedisi->biaya_pengiriman }}"
-                                        {{ $loop->first ? 'checked' : '' }}
-                                        onchange="calculateTotal()"
-                                        class="w-4 h-4 accent-primary shrink-0 rounded-full text-primary focus:ring-primary">
-                                    <div class="flex-1">
-                                        <div class="text-[14px] font-bold text-g800">{{ $ekspedisi->nama_ekspedisi }}</div>
-                                    </div>
-                                    <div class="font-heading font-extrabold text-primary text-[15px]">
-                                        Rp {{ number_format($ekspedisi->biaya_pengiriman, 0, ',', '.') }}
-                                    </div>
-                                </label>
-                            @endforeach
+                        <x-card class="p-6">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                                <h3 class="font-heading text-lg font-extrabold text-g900 flex items-center gap-2">
+                                    <i class="fi fi-rr-truck-side text-primary"></i> Ekspedisi Pengiriman
+                                </h3>
+                                <span id="shippingRateSourceBadge" class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-200 py-1 px-3 rounded-full text-[11px] font-bold">
+                                    <i class="fi fi-rr-marker"></i> Dikirim dari {{ config('services.rajaongkir.origin_search', 'Surabaya') }}
+                                </span>
+                            </div>
+
+                            <div class="mb-4 flex flex-wrap items-center justify-between gap-2 bg-g50 border border-g200 rounded-xl px-4 py-2.5 text-[12px] font-semibold text-g600">
+                                <span>
+                                    Total Berat Paket:
+                                    <strong class="text-g900">{{ number_format(($totalWeight ?? 1000) / 1000, 2, ',', '.') }} kg</strong>
+                                    ({{ number_format($totalWeight ?? 1000) }} gr)
+                                </span>
+                                <span id="shippingDestinationLabel" class="text-g500"></span>
+                            </div>
+
+                            <input type="hidden" name="layanan_pengiriman" id="inputLayananPengiriman" value="">
+                            <input type="hidden" name="estimasi_hari" id="inputEstimasiHari" value="">
+
+                            <div id="shippingLoading" class="hidden py-6 text-center text-[13px] font-semibold text-g500">
+                                Menghitung estimasi ongkos kirim berdasarkan alamat dan berat...
+                            </div>
+
+                            <div id="shippingOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                @foreach($ekspedisis as $index => $ekspedisi)
+                                    <label class="ship-opt flex items-center gap-3.5 p-4 bg-white rounded-xl cursor-pointer border-[1.5px] transition-all {{ $index === 0 ? 'border-primary bg-primary-light shadow-[0_0_0_4px_rgba(26,92,255,0.1)]' : 'border-g200 hover:border-g300' }}" onclick="selectShip(this)">
+                                        <input type="radio" name="id_ekspedisi" value="{{ $ekspedisi->id_ekspedisi }}" data-biaya="{{ $ekspedisi->biaya_pengiriman }}" data-service="REG" data-etd="2-4 hari" {{ $index === 0 ? 'checked' : '' }} class="w-4 h-4 accent-primary shrink-0" />
+                                        <div>
+                                            <div class="font-bold text-[14px] text-g800 mb-0.5">{{ $ekspedisi->nama_ekspedisi }} - REG</div>
+                                            <div class="text-[11px] font-medium text-g500 mb-0.5">Estimasi 2-4 hari</div>
+                                            <div class="text-[13px] font-bold text-primary">Rp {{ number_format($ekspedisi->biaya_pengiriman, 0, ',', '.') }}</div>
+                                        </div>
+                                    </label>
+                                @endforeach
                             </div>
                         </x-card>
 
@@ -235,23 +252,40 @@
 
     @push('scripts')
     <script>
-        const baseSubtotal = {{ max(0, $subtotal - $discount) }};
-        
-        function formatRupiah(amount) {
-            return 'Rp ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        const baseSubtotal = {{ max(0, $subtotal - ($discount ?? 0)) }};
+        const shippingRatesUrl = "{{ route('customer.checkout.shippingRates') }}";
+        const csrfToken = "{{ csrf_token() }}";
+
+        function formatRupiah(num) {
+            return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
         }
 
-        function calculateTotal() {
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function updateOrderSummary() {
             const selectedEkspedisi = document.querySelector('input[name="id_ekspedisi"]:checked');
-            if (selectedEkspedisi) {
-                const ongkir = parseInt(selectedEkspedisi.getAttribute('data-biaya')) || 0;
-                const currentSubtotal = parseInt(document.getElementById('totalPayment').textContent.replace(/[^\d]/g, '')) || baseSubtotal;
-                // We actually need the base subtotal from server to be accurate after discount
-                const total = baseSubtotal + ongkir;
-                
-                document.getElementById('shippingCost').textContent = formatRupiah(ongkir);
-                const totalEl = document.getElementById('totalPayment');
-                if (totalEl) totalEl.textContent = formatRupiah(total);
+            const ongkir = selectedEkspedisi ? (parseInt(selectedEkspedisi.getAttribute('data-biaya')) || 0) : 0;
+            const total = baseSubtotal + ongkir;
+
+            document.getElementById('shippingCost').textContent = formatRupiah(ongkir);
+            const totalPaymentEl = document.getElementById('totalPayment');
+            if (totalPaymentEl) {
+                totalPaymentEl.textContent = formatRupiah(total);
+            }
+
+            const serviceInput = document.getElementById('inputLayananPengiriman');
+            const etdInput = document.getElementById('inputEstimasiHari');
+            if (serviceInput && selectedEkspedisi) {
+                serviceInput.value = selectedEkspedisi.getAttribute('data-service') || 'REG';
+            }
+            if (etdInput && selectedEkspedisi) {
+                etdInput.value = selectedEkspedisi.getAttribute('data-etd') || '2-4 hari';
             }
         }
 
@@ -261,12 +295,44 @@
             const selectedMethod = document.querySelector('input[name="metode_pembayaran"]:checked')?.value;
             const isMidtrans = selectedMethod === 'Midtrans Sandbox';
             const hasAlamat = {{ $alamats->isNotEmpty() ? 'true' : 'false' }};
-            
-            if (hasAlamat && (isMidtrans || (fileInput && fileInput.files.length > 0))) {
+            const hasEkspedisi = !!document.querySelector('input[name="id_ekspedisi"]:checked');
+
+            if (hasAlamat && hasEkspedisi && (isMidtrans || (fileInput && fileInput.files.length > 0))) {
                 btn.classList.remove('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
             } else {
                 btn.classList.add('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
             }
+        }
+
+        function selectAddr(el) {
+            document.querySelectorAll('.addr-card').forEach(card => {
+                card.classList.remove('border-primary', 'bg-primary-light', 'shadow-[0_0_0_4px_rgba(26,92,255,0.1)]');
+                card.classList.add('border-g200');
+            });
+            el.classList.add('border-primary', 'bg-primary-light', 'shadow-[0_0_0_4px_rgba(26,92,255,0.1)]');
+            el.classList.remove('border-g200');
+
+            const radio = el.querySelector('input[name="id_alamat"]');
+            if (radio) {
+                radio.checked = true;
+                fetchShippingRates(radio.value);
+            }
+        }
+
+        function selectShip(el) {
+            document.querySelectorAll('.ship-opt').forEach(opt => {
+                opt.classList.remove('border-primary', 'bg-primary-light', 'shadow-[0_0_0_4px_rgba(26,92,255,0.1)]');
+                opt.classList.add('border-g200');
+            });
+            el.classList.add('border-primary', 'bg-primary-light', 'shadow-[0_0_0_4px_rgba(26,92,255,0.1)]');
+            el.classList.remove('border-g200');
+
+            const radio = el.querySelector('input[name="id_ekspedisi"]');
+            if (radio) {
+                radio.checked = true;
+            }
+            updateOrderSummary();
+            validateCheckoutReady();
         }
 
         function selectPay(el, type) {
@@ -289,68 +355,103 @@
             validateCheckoutReady();
         }
 
-        function handleUpload(input) {
-            if (input.files && input.files[0]) {
-                const msg = document.getElementById('uploadPreviewMsg');
-                msg.textContent = 'File terpilih: ' + input.files[0].name;
-                document.getElementById('uploadPreview').classList.remove('hidden');
+        function renderShippingRates(rates) {
+            const container = document.getElementById('shippingOptionsContainer');
+            if (!container || !Array.isArray(rates) || rates.length === 0) return;
+
+            container.innerHTML = rates.map((rate, idx) => {
+                const isFirst = idx === 0;
+                const activeClasses = isFirst
+                    ? 'border-primary bg-primary-light shadow-[0_0_0_4px_rgba(26,92,255,0.1)]'
+                    : 'border-g200 hover:border-g300';
+
+                return `
+                    <label class="ship-opt flex items-center gap-3.5 p-4 bg-white rounded-xl cursor-pointer border-[1.5px] transition-all ${activeClasses}" onclick="selectShip(this)">
+                        <input type="radio"
+                               name="id_ekspedisi"
+                               value="${escapeHtml(rate.id_ekspedisi)}"
+                               data-biaya="${escapeHtml(rate.cost)}"
+                               data-service="${escapeHtml(rate.service)}"
+                               data-etd="${escapeHtml(rate.etd)}"
+                               ${isFirst ? 'checked' : ''}
+                               class="w-4 h-4 accent-primary shrink-0" />
+                        <div>
+                            <div class="font-bold text-[14px] text-g800 mb-0.5">${escapeHtml(rate.courier_name)} - ${escapeHtml(rate.service)}</div>
+                            <div class="text-[11px] font-medium text-g500 mb-0.5">Estimasi ${escapeHtml(rate.etd)}</div>
+                            <div class="text-[13px] font-bold text-primary">${formatRupiah(rate.cost)}</div>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+
+            updateOrderSummary();
+            validateCheckoutReady();
+        }
+
+        async function fetchShippingRates(idAlamat) {
+            if (!idAlamat) return;
+
+            const loadingEl = document.getElementById('shippingLoading');
+            const badgeEl = document.getElementById('shippingRateSourceBadge');
+            const destLabelEl = document.getElementById('shippingDestinationLabel');
+
+            if (loadingEl) loadingEl.classList.remove('hidden');
+
+            try {
+                const response = await fetch(shippingRatesUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ id_alamat: idAlamat })
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (badgeEl) {
+                    if (data.source === 'api') {
+                        badgeEl.className = 'inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 py-1 px-3 rounded-full text-[11px] font-bold';
+                        badgeEl.innerHTML = `<i class="fi fi-rr-check-circle"></i> RajaOngkir API · Dari ${escapeHtml(data.origin)}`;
+                    } else {
+                        badgeEl.className = 'inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-200 py-1 px-3 rounded-full text-[11px] font-bold';
+                        badgeEl.innerHTML = `<i class="fi fi-rr-info"></i> Tarif Standar · Dari ${escapeHtml(data.origin)}`;
+                    }
+                }
+                if (destLabelEl && data.destination) {
+                    destLabelEl.textContent = 'Tujuan: ' + data.destination;
+                }
+
+                renderShippingRates(data.rates || []);
+            } catch (err) {
+                console.error('Gagal mengambil tarif pengiriman:', err);
+            } finally {
+                if (loadingEl) loadingEl.classList.add('hidden');
             }
         }
 
-        // Smooth Voucher AJAX Logic
-        document.addEventListener('submit', async function(e) {
-            const form = e.target;
-            if (!form.classList.contains('voucher-form-ajax')) return;
-            
-            e.preventDefault();
-            const container = document.getElementById('checkoutPageContainer');
-            container.style.opacity = '0.5';
-            container.style.pointerEvents = 'none';
-
-            try {
-                const formData = new FormData(form);
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-
-                const newContent = doc.getElementById('checkoutPageContainer');
-                if (newContent) {
-                    container.innerHTML = newContent.innerHTML;
-                    
-                    // Trigger SweetAlert based on redirected session data in the new HTML
-                    const flash = doc.getElementById('flash-messages');
-                    if (flash) {
-                        const status = flash.getAttribute('data-status');
-                        const error = flash.getAttribute('data-error');
-                        const errors = flash.getAttribute('data-errors');
-                        
-                        if (status) window.showAlert('success', 'Berhasil!', status);
-                        if (error) window.showAlert('error', 'Gagal!', error);
-                        if (errors) window.showAlert('error', 'Ups!', errors.replace(/\\n/g, '<br>'));
-                    }
-
-                    calculateTotal();
-                    validateCheckoutReady();
-                }
-            } catch (err) {
-                console.error(err);
-                location.reload();
-            } finally {
-                container.style.opacity = '1';
-                container.style.pointerEvents = 'auto';
+        function handleUpload(input) {
+            const preview = document.getElementById('uploadPreview');
+            const msg = document.getElementById('uploadPreviewMsg');
+            if (input.files && input.files[0]) {
+                msg.textContent = 'File dipilih: ' + input.files[0].name;
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
             }
-        });
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
-            calculateTotal();
+            updateOrderSummary();
             validateCheckoutReady();
+
+            const initialAlamat = document.querySelector('input[name="id_alamat"]:checked');
+            if (initialAlamat) {
+                fetchShippingRates(initialAlamat.value);
+            }
         });
     </script>
-    @endpush
+@endpush
 @endsection
