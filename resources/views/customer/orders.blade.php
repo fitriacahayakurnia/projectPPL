@@ -131,7 +131,47 @@
                         <div class="text-right">
                             <div class="text-xs font-bold text-g500 uppercase tracking-widest mb-1">Total Bayar</div>
                             <div class="font-heading text-xl font-extrabold text-primary mb-2">Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</div>
-                            
+                            @php
+                                $pembayaran = $pesanan->pembayaran;
+                                $isMidtrans = $pembayaran?->gateway === 'midtrans';
+                                $payStatus = (int) ($pembayaran?->status_konfirmasi ?? 0);
+                            @endphp
+
+                            @if ($isMidtrans)
+                                <div class="mb-2">
+                                    @if ($payStatus === 1)
+                                        <span class="inline-flex items-center gap-1 bg-green-50 text-green-600 border border-green-200 py-1 px-2.5 rounded-full text-[11px] font-bold">
+                                            <i class="fi fi-rr-check-circle"></i> Lunas ({{ strtoupper($pembayaran->payment_type ?? 'Midtrans') }})
+                                        </span>
+                                    @elseif ($payStatus === 2)
+                                        <span class="inline-flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 py-1 px-2.5 rounded-full text-[11px] font-bold">
+                                            <i class="fi fi-rr-cross-circle"></i> Pembayaran Gagal / Kedaluwarsa
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 bg-orange-50 text-orange-600 border border-orange-200 py-1 px-2.5 rounded-full text-[11px] font-bold">
+                                            <i class="fi fi-rr-time-clock"></i> Menunggu Pembayaran Midtrans
+                                        </span>
+                                    @endif
+                                </div>
+
+                                @if ($payStatus === 0)
+                                    <div class="flex flex-wrap items-center justify-end gap-2 mt-2">
+                                        @if ($pembayaran->payment_url)
+                                            <a href="{{ $pembayaran->payment_url }}" target="_blank" rel="noopener"
+                                               class="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl font-bold text-[13px] bg-primary text-white shadow-sm hover:bg-primary-dark transition-all">
+                                                <i class="fi fi-rr-credit-card"></i> Bayar Sekarang
+                                            </a>
+                                        @endif
+                                        <form action="{{ route('customer.orders.syncPayment', $pesanan) }}" method="POST" class="m-0">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-xl font-bold text-[13px] bg-white text-g700 border border-g200 hover:border-primary hover:text-primary transition-all">
+                                                <i class="fi fi-rr-refresh"></i> Cek Status
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            @endif
                             @if ($pesanan->status_pesanan === 'dikirim')
                                 <form action="{{ route('customer.orders.complete', $pesanan) }}" method="POST" onsubmit="event.preventDefault(); window.confirmCompleteOrder(this);">
                                     @csrf
@@ -141,6 +181,7 @@
                                 </form>
                             @endif
                         </div>
+                        
                     </div>
                 </div>
             @empty

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Kategori;
 use App\Models\Produk;
 use App\Models\User;
-
 use App\Models\Wishlist;
 use App\Models\DetailPesanan;
 use Illuminate\Http\Request;
@@ -26,12 +25,14 @@ class ProdukController extends Controller
         return $base . $suffix;
     }
 
+    
     /**
      * Halaman utama / landing page.
      */
-    public function index()
+    public function index(?\App\Services\BestSellingProductService $bestSellingService = null)
     {
-        // Ambil hanya kolom yang dibutuhkan untuk landing page
+        $bestSellingService ??= app(\App\Services\BestSellingProductService::class);
+
         $produkBaru = Produk::with('kategori')
             ->select('id_produk', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok')
             ->latest('id_produk')
@@ -42,22 +43,10 @@ class ProdukController extends Controller
             ->select('id_kategori', 'nama_kategori', 'ikon_kategori')
             ->get();
 
-        // Hitung statistik dalam 2 query ringkas
         $jumlahProduk = Produk::count();
         $jumlahUser   = User::count();
 
-        // Produk terlaris: minimal terjual 10 dan status dikirim/selesai
-        $produkTerlaris = DetailPesanan::query()
-            ->select('id_produk')
-            ->selectRaw('SUM(qty) as total_terjual')
-            ->whereHas('pesanan', fn($q) => $q->whereIn('status_pesanan', ['dikirim', 'selesai']))
-            ->groupBy('id_produk')
-            ->having('total_terjual', '>=', 10)
-            ->orderByDesc('total_terjual')
-            ->with(['produk' => fn($q) => $q->select('id_produk', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok')
-                ->with(['kategori' => fn($q) => $q->select('id_kategori', 'nama_kategori')])])
-            ->take(10)
-            ->get();
+        $produkTerlaris = $bestSellingService->forStorefront(limit: 10, minSold: 10);
 
         $wishlistIds = Auth::check()
             ? Wishlist::where('id_users', Auth::id())->pluck('id_produk')->toArray()
@@ -79,7 +68,6 @@ class ProdukController extends Controller
         $query = Produk::with(['kategori' => fn($q) => $q->select('id_kategori', 'nama_kategori')])
             ->select('id_produk', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok');
 
-        // Filter by kategori (bisa nama_kategori atau id_kategori)
         if ($request->filled('kategori')) {
             $katVal = $request->kategori;
             if (is_numeric($katVal)) {
@@ -89,12 +77,10 @@ class ProdukController extends Controller
             }
         }
 
-        // Search by name – filter di DB bukan di Collection
         if ($request->filled('q')) {
             $query->where('nama_produk', 'like', '%' . $request->q . '%');
         }
 
-        // Sort – di DB
         $sort  = $request->get('sort', 'terbaru');
         $query = match ($sort) {
             'termurah' => $query->orderBy('harga', 'asc'),
@@ -134,12 +120,12 @@ class ProdukController extends Controller
     }
 
     /**
-     * Admin: daftar produk – dengan pagination agar tidak load semua sekaligus.
+     * Admin: daftar produk.
      */
     public function adminIndex()
     {
-        $produks   = Produk::with(['kategori' => fn($q) => $q->select('id_kategori', 'nama_kategori')])
-            ->select('id_produk', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok')
+        $produks = Produk::with(['kategori' => fn($q) => $q->select('id_kategori', 'nama_kategori')])
+            ->select('id_produk', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok', 'berat')
             ->latest('id_produk')
             ->paginate(20);
 
@@ -161,8 +147,11 @@ class ProdukController extends Controller
             'deskripsi' => ['required', 'string'],
             'harga' => ['required', 'integer', 'min:0'],
             'stok' => ['required', 'integer', 'min:0'],
+            'berat' => ['nullable', 'integer', 'min:1'],
             'gambar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
+
+        $data['berat'] = $data['berat'] ?? 1000;
 
         $extension = $request->file('gambar')->getClientOriginalExtension();
         $filename = $this->buildImageFilename($data['nama_produk'], $extension);
@@ -197,8 +186,11 @@ class ProdukController extends Controller
             'deskripsi' => ['required', 'string'],
             'harga' => ['required', 'integer', 'min:0'],
             'stok' => ['required', 'integer', 'min:0'],
+            'berat' => ['nullable', 'integer', 'min:1'],
             'gambar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
+
+        $data['berat'] = $data['berat'] ?? ($produk->berat ?? 1000);
 
         if ($request->hasFile('gambar')) {
             if ($produk->gambar) {

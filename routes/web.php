@@ -9,9 +9,11 @@ use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\PesananController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PromoController;
+use App\Http\Controllers\PembayaranController;
 
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WishlistController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -91,8 +93,11 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/my-orders', [PesananController::class, 'customerOrders'])->name('customer.orders');
     Route::post('/my-orders/{pesanan}/complete', [PesananController::class, 'completeOrder'])->name('customer.orders.complete');
     Route::get('/checkout', [PesananController::class, 'checkout'])->name('customer.checkout');
+    Route::post('/checkout/shipping-rates', [\App\Http\Controllers\EkspedisiController::class, 'calculateRates'])->name('customer.checkout.shippingRates');
     Route::post('/buy-now', [PesananController::class, 'buyNow'])->name('customer.buyNow');
     Route::post('/checkout', [PesananController::class, 'placeOrder'])->name('customer.placeOrder');
+    Route::get('/payments/midtrans/finish', [PembayaranController::class, 'finish'])->name('payments.midtrans.finish');
+    Route::post('/my-orders/{pesanan}/sync-payment', [PembayaranController::class, 'syncStatus'])->name('customer.orders.syncPayment');
     Route::get('/notifications', [NotifikasiController::class, 'index'])->name('customer.notifications.index');
     Route::patch('/notifications/{notifikasi}/read', [NotifikasiController::class, 'markRead'])->name('customer.notifications.read');
     Route::patch('/notifications/read-all', [NotifikasiController::class, 'markAllRead'])->name('customer.notifications.readAll');
@@ -161,4 +166,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
     Route::get('/', [UserController::class, 'ownerDashboard'])->name('index');
     Route::get('/report/download', [UserController::class, 'downloadReport'])->name('report.download');
-});
+    Route::get('/payments/midtrans/finish', [PembayaranController::class, 'finish'])->name('payments.midtrans.finish');
+    Route::post('/my-orders/{pesanan}/sync-payment', [PembayaranController::class, 'syncStatus'])->name('customer.orders.syncPayment');
+
+    });
+
+// At bottom of routes/web.php (public webhook for Midtrans server):
+Route::post('/payments/midtrans/notification', [PembayaranController::class, 'notification'])->name('payments.midtrans.notification');
