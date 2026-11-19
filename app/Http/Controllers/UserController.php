@@ -187,8 +187,10 @@ class UserController extends Controller
     /**
      * Owner dashboard.
      */
-    public function ownerDashboard()
+    public function ownerDashboard(?\App\Services\BestSellingProductService $bestSellingService = null)
     {
+        $bestSellingService ??= app(\App\Services\BestSellingProductService::class);
+
         $jumlahCustomer = User::where('role', 'customer')->count();
         $jumlahAdmin = User::where('role', 'admin')->count();
         $jumlahProduk = Produk::count();
@@ -242,15 +244,7 @@ class UserController extends Controller
             ->orderByDesc('total_nominal')
             ->get();
 
-        $produkTerlaris = DetailPesanan::with(['produk:id_produk,id_kategori,nama_produk,gambar,harga'])
-            ->join('pesanans', 'detail_pesanans.id_pesanan', '=', 'pesanans.id_pesanan')
-            ->where('pesanans.status_pesanan', 'selesai')
-            ->select('detail_pesanans.id_produk')
-            ->selectRaw('SUM(detail_pesanans.qty) as total_qty, SUM(detail_pesanans.qty * detail_pesanans.harga_beli) as total_nominal')
-            ->groupBy('detail_pesanans.id_produk')
-            ->orderByDesc('total_qty')
-            ->take(5)
-            ->get();
+        $produkTerlaris = $bestSellingService->forOwnerDashboard(limit: 5);
 
         $pesananTerbaru = Pesanan::with('user:id_users,nama,email')
             ->select('id_pesanan', 'id_users', 'no_resi', 'tanggal_pesan', 'status_pesanan', 'total_bayar')

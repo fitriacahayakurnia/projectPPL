@@ -25,11 +25,14 @@ class ProdukController extends Controller
         return $base . $suffix;
     }
 
+    
     /**
      * Halaman utama / landing page.
      */
-    public function index()
+    public function index(?\App\Services\BestSellingProductService $bestSellingService = null)
     {
+        $bestSellingService ??= app(\App\Services\BestSellingProductService::class);
+
         $produkBaru = Produk::with('kategori')
             ->select('id_produk', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok')
             ->latest('id_produk')
@@ -43,17 +46,7 @@ class ProdukController extends Controller
         $jumlahProduk = Produk::count();
         $jumlahUser   = User::count();
 
-        $produkTerlaris = DetailPesanan::query()
-            ->select('id_produk')
-            ->selectRaw('SUM(qty) as total_terjual')
-            ->whereHas('pesanan', fn($q) => $q->whereIn('status_pesanan', ['dikirim', 'selesai']))
-            ->groupBy('id_produk')
-            ->having('total_terjual', '>=', 10)
-            ->orderByDesc('total_terjual')
-            ->with(['produk' => fn($q) => $q->select('id_produk', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok')
-                ->with(['kategori' => fn($q) => $q->select('id_kategori', 'nama_kategori')])])
-            ->take(10)
-            ->get();
+        $produkTerlaris = $bestSellingService->forStorefront(limit: 10, minSold: 10);
 
         $wishlistIds = Auth::check()
             ? Wishlist::where('id_users', Auth::id())->pluck('id_produk')->toArray()
