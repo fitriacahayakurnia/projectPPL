@@ -130,36 +130,19 @@
                             </div>
                         </x-card>
 
-                        <!-- Pembayaran & Upload -->
-                        <!-- Pembayaran & Upload -->
+                        <!-- Pembayaran -->
                         <x-card class="p-6">
                             <h3 class="font-heading text-lg font-extrabold text-g900 mb-5 flex items-center gap-2">
                                 <i class="fi fi-rr-credit-card text-primary"></i> Metode Pembayaran
                             </h3>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <label class="pay-opt flex items-center gap-3.5 p-4 bg-white rounded-xl cursor-pointer border-[1.5px] transition-all border-primary bg-primary-light shadow-[0_0_0_4px_rgba(26,92,255,0.1)]" onclick="selectPay(this, 'midtrans')">
+
+                            <div class="grid grid-cols-1 gap-4">
+                                <label class="pay-opt flex items-center gap-3.5 p-4 rounded-xl cursor-pointer border-[1.5px] transition-all border-primary bg-primary-light shadow-[0_0_0_4px_rgba(26,92,255,0.1)]">
                                     <input type="radio" name="metode_pembayaran" value="Midtrans Sandbox" checked class="w-4 h-4 accent-primary shrink-0" />
                                     <div class="text-[24px] text-primary flex items-center justify-center bg-white w-11 h-11 rounded-full shadow-sm shrink-0"><i class="fi fi-rr-credit-card"></i></div>
                                     <div>
                                         <div class="font-bold text-[14px] text-g800 mb-0.5">Midtrans</div>
-                                        <div class="text-[10px] font-medium text-g500 uppercase tracking-wider">VA · QRIS · E-Wallet</div>
-                                    </div>
-                                </label>
-                                <label class="pay-opt flex items-center gap-3.5 p-4 bg-white rounded-xl cursor-pointer border-[1.5px] border-g200 transition-all hover:border-g300" onclick="selectPay(this, 'bank')">
-                                    <input type="radio" name="metode_pembayaran" value="Transfer Bank" class="w-4 h-4 accent-primary shrink-0" />
-                                    <div class="text-[24px] text-primary flex items-center justify-center bg-white w-11 h-11 rounded-full shadow-sm shrink-0"><i class="fi fi-rr-bank"></i></div>
-                                    <div>
-                                        <div class="font-bold text-[14px] text-g800 mb-0.5">Transfer Bank</div>
-                                        <div class="text-[10px] font-medium text-g500 uppercase tracking-wider">Manual Upload</div>
-                                    </div>
-                                </label>
-                                <label class="pay-opt flex items-center gap-3.5 p-4 bg-white rounded-xl cursor-pointer border-[1.5px] border-g200 transition-all hover:border-g300" onclick="selectPay(this, 'ewallet')">
-                                    <input type="radio" name="metode_pembayaran" value="E-Wallet" class="w-4 h-4 accent-primary shrink-0" />
-                                    <div class="text-[24px] text-green-500 flex items-center justify-center bg-green-50 w-11 h-11 rounded-full border border-green-100 shrink-0"><i class="fi fi-rr-wallet"></i></div>
-                                    <div>
-                                        <div class="font-bold text-[14px] text-g800 mb-0.5">E-Wallet</div>
-                                        <div class="text-[10px] font-medium text-g500 uppercase tracking-wider">Manual Upload</div>
+                                        <div class="text-[10px] font-medium text-g500 uppercase tracking-wider">Virtual Account · QRIS · E-Wallet</div>
                                     </div>
                                 </label>
                             </div>
@@ -167,31 +150,6 @@
                             <div id="midtransDetail" class="mt-4 bg-primary-light/50 border border-primary/20 rounded-xl p-5 border-l-4 border-l-primary">
                                 <div class="font-bold text-primary mb-1 flex items-center gap-2"><i class="fi fi-rr-shield-check"></i> Pembayaran Otomatis via Midtrans Sandbox</div>
                                 <div class="text-[13px] text-g600">Anda akan diarahkan ke halaman pembayaran Midtrans (Virtual Account, QRIS, GoPay, dll.) setelah menekan tombol <strong>Buat Pesanan</strong>.</div>
-                            </div>
-                            
-                            <div id="bankDetail" class="mt-4 bg-primary-light/50 border border-primary/20 rounded-xl p-5 border-l-4 border-l-primary hidden">
-                                <div class="font-bold text-primary mb-2 flex items-center gap-2"><i class="fi fi-rr-document"></i> Detail Transfer Bank:</div>
-                                <div class="text-[14px] text-g800 mb-1"><strong>Bank BCA</strong> – No. Rek: <strong class="text-primary font-heading text-lg ml-1 tracking-wider">1234-5678-90</strong></div>
-                                <div class="text-[13px] font-medium text-g500">a.n. Elektronik Modern Store</div>
-                            </div>
-
-                            <div id="ewalletDetail" class="mt-4 bg-green-50 border border-green-200 rounded-xl p-5 border-l-4 border-l-green-500 hidden">
-                                <div class="font-bold text-green-700 mb-2 flex items-center gap-2"><i class="fi fi-rr-smartphone"></i> Detail E-Wallet:</div>
-                                <div class="text-[14px] text-g800 mb-1"><strong>DANA / ShopeePay</strong> – No. HP: <strong class="text-green-600 font-heading text-lg ml-1 tracking-wider">0812-3456-7890</strong></div>
-                                <div class="text-[13px] font-medium text-g500">a.n. Elektronik Modern Admin</div>
-                            </div>
-
-                            <div id="uploadSection" class="mt-8 hidden">
-                                <x-label class="mb-3">Upload Bukti Pembayaran</x-label>
-                                <div class="border-2 border-dashed border-g300 rounded-2xl p-8 text-center text-g500 cursor-pointer transition-all hover:border-primary hover:bg-primary-light group" onclick="document.getElementById('bukti_bayar').click()">
-                                    <div class="text-[40px] mb-3 text-g300 group-hover:text-primary transition-colors inline-flex"><i class="fi fi-rr-cloud-upload"></i></div>
-                                    <div class="font-bold text-[15px] mb-1.5 text-g700 group-hover:text-primary transition-colors">Klik atau seret file ke sini</div>
-                                    <div class="text-[12px] font-medium">Format: JPG, PNG, PDF · Maks. 5MB</div>
-                                    <input type="file" id="bukti_bayar" name="bukti_bayar" accept="image/*,.pdf" class="hidden" onchange="handleUpload(this); validateCheckoutReady()" />
-                                </div>
-                                <div id="uploadPreview" class="hidden mt-4 bg-green-50 border border-green-200 rounded-xl p-3 text-[13px] text-green-700 font-bold flex items-center gap-2">
-                                    <i class="fi fi-rr-check-circle text-lg"></i> <span id="uploadPreviewMsg"></span>
-                                </div>
                             </div>
                         </x-card>
                     </form>
@@ -291,13 +249,10 @@
 
         function validateCheckoutReady() {
             const btn = document.getElementById('btnSubmitCheckout');
-            const fileInput = document.getElementById('bukti_bayar');
-            const selectedMethod = document.querySelector('input[name="metode_pembayaran"]:checked')?.value;
-            const isMidtrans = selectedMethod === 'Midtrans Sandbox';
             const hasAlamat = {{ $alamats->isNotEmpty() ? 'true' : 'false' }};
             const hasEkspedisi = !!document.querySelector('input[name="id_ekspedisi"]:checked');
 
-            if (hasAlamat && hasEkspedisi && (isMidtrans || (fileInput && fileInput.files.length > 0))) {
+            if (hasAlamat && hasEkspedisi) {
                 btn.classList.remove('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
             } else {
                 btn.classList.add('opacity-60', 'cursor-not-allowed', 'pointer-events-none');

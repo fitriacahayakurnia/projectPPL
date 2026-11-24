@@ -260,16 +260,12 @@ class PesananController extends Controller
             'id_ekspedisi'       => ['required', 'exists:ekspedisis,id_ekspedisi'],
             'layanan_pengiriman' => ['nullable', 'string', 'max:100'],
             'estimasi_hari'      => ['nullable', 'string', 'max:50'],
-            'metode_pembayaran'  => ['required', 'string', 'in:Midtrans Sandbox,Transfer Bank,E-Wallet'],
-            'bukti_bayar'        => ['required_unless:metode_pembayaran,Midtrans Sandbox', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'metode_pembayaran'  => ['required', 'string', 'in:Midtrans Sandbox'],
         ], [
             'id_alamat.required'           => 'Silakan pilih alamat pengiriman.',
             'id_ekspedisi.required'        => 'Silakan pilih ekspedisi pengiriman.',
             'metode_pembayaran.required'   => 'Silakan pilih metode pembayaran.',
             'metode_pembayaran.in'         => 'Metode pembayaran tidak valid.',
-            'bukti_bayar.required_unless'  => 'Bukti pembayaran wajib diunggah.',
-            'bukti_bayar.mimes'            => 'Format bukti bayar harus berupa JPG, PNG, atau PDF.',
-            'bukti_bayar.max'              => 'Ukuran file bukti bayar maksimal 5MB.',
         ]);
 
         $alamatModel = AlamatUser::where('id_users', Auth::id())
@@ -410,9 +406,9 @@ class PesananController extends Controller
 
             Pembayaran::create([
                 'id_pesanan'        => $pesanan->id_pesanan,
-                'metode_pembayaran' => $request->metode_pembayaran,
-                'gateway'           => $isMidtrans ? 'midtrans' : 'manual',
-                'bukti_bayar'       => $buktiFileName,
+                'metode_pembayaran' => 'Midtrans Sandbox',
+                'gateway'           => 'midtrans',
+                'bukti_bayar'       => null,
                 'status_konfirmasi' => 0,
             ]);
 
